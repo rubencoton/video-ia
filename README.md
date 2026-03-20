@@ -1,38 +1,56 @@
 # VIDEO IA
 
-Repositorio base para construir un flujo de generacion de video con:
+App local para Windows que permite:
 
-- un video original (movimiento base)
-- una imagen de referencia
-- un prompt de texto
+- subir un video
+- subir una imagen de referencia
+- escribir un prompt
+- generar un video de salida en `output/`
 
-## Objetivo
+## Como abrir la app
 
-Crear una pipeline clara para transformar un video de entrada en un video final editado con IA.
+1. Doble clic en `iniciar_video_ia.cmd`.
+2. Se abre la ventana `VIDEO IA - App Local`.
+3. Cargas video + imagen + prompt.
+4. Pulsa `Generar video`.
 
-## Estructura inicial
+## Acceso directo de escritorio
+
+Para crear el icono en el escritorio:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\create_desktop_shortcut.ps1
+```
+
+Se creara `VIDEO IA.lnk` en el escritorio.
+
+## Efectos de prompt detectados (v1)
+
+La app detecta palabras del prompt y aplica filtros automaticos:
+
+- `blanco y negro`
+- `sepia` o `vintage`
+- `mas brillo`
+- `contraste`
+- `cinematic`
+
+Si no detecta una palabra conocida, genera video con la imagen de referencia superpuesta.
+
+## Estructura
 
 ```
 video-ia/
-|- assets/          # Recursos visuales del proyecto
-|- docs/            # Documentacion y plan de trabajo
-|- input/           # Archivos de entrada (video, imagen, prompt)
-|- output/          # Resultados generados
-|- src/             # Codigo del proyecto
-|- .env.example     # Variables de entorno de ejemplo
+|- assets/
+|- docs/
+|- input/
+|- output/
+|- scripts/
+|- src/
+|  |- app.py
+|  `- video_processor.py
+|- iniciar_video_ia.cmd
+|- requirements.txt
 |- .gitignore
 |- LICENSE
 `- README.md
 ```
-
-## Flujo de trabajo (v1)
-
-1. Copiar el video base en `input/video.mp4`.
-2. Copiar la imagen de referencia en `input/referencia.png`.
-3. Escribir el prompt en `input/prompt.txt`.
-4. Ejecutar el script de generacion (pendiente en `src/`).
-5. Revisar el resultado en `output/`.
-
-## Estado
-
-Este repo queda preparado para empezar la implementacion tecnica.

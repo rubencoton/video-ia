@@ -2,19 +2,28 @@
 
 ## Requisitos
 
-- Git
-- Cuenta de GitHub
-- (Opcional) Node.js o Python para el motor de generacion
+- Windows
+- Python 3.10 o superior
+- Pip
 
-## Primeros pasos
+## Primer arranque
 
-1. Clona el repo.
-2. Copia `.env.example` a `.env`.
-3. Rellena tu API key.
-4. Mete tus pruebas en `input/`.
+1. Abrir `iniciar_video_ia.cmd`.
+2. Esperar instalacion automatica de dependencias.
+3. Usar la ventana de la app.
 
-## Estructura de input recomendada
+## Crear icono en escritorio
 
-- `input/video.mp4`
-- `input/referencia.png`
-- `input/prompt.txt`
+Ejecuta:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\create_desktop_shortcut.ps1
+```
+
+## Donde se guardan los resultados
+
+- Cada trabajo se guarda en `output/job_YYYYMMDD_HHMMSS`.
+- Dentro tendras:
+  - `video_resultado.mp4`
+  - `prompt.txt`
+  - `resumen.json`
