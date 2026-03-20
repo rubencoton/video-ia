@@ -76,19 +76,26 @@ def api_generate() -> object:
 
     video = request.files.get("video")
     image = request.files.get("image")
+    audio = request.files.get("audio")
     prompt = str(request.form.get("prompt", "")).strip()
 
     if not video or not video.filename:
         return jsonify({"ok": False, "message": "Falta el archivo de video."}), 400
-    if not image or not image.filename:
-        return jsonify({"ok": False, "message": "Falta la imagen de referencia."}), 400
     if not prompt:
         return jsonify({"ok": False, "message": "Falta el prompt."}), 400
 
     if not _allowed_file(video.filename, {".mp4", ".mov", ".mkv", ".avi", ".webm"}):
         return jsonify({"ok": False, "message": "Formato de video no soportado."}), 400
-    if not _allowed_file(image.filename, {".png", ".jpg", ".jpeg", ".webp"}):
+
+    if image and image.filename and not _allowed_file(
+        image.filename, {".png", ".jpg", ".jpeg", ".webp"}
+    ):
         return jsonify({"ok": False, "message": "Formato de imagen no soportado."}), 400
+
+    if audio and audio.filename and not _allowed_file(
+        audio.filename, {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
+    ):
+        return jsonify({"ok": False, "message": "Formato de audio no soportado."}), 400
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     upload_id = f"upload_{stamp}_{uuid4().hex[:6]}"
@@ -96,19 +103,29 @@ def api_generate() -> object:
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     video_ext = Path(video.filename).suffix.lower() or ".mp4"
-    image_ext = Path(image.filename).suffix.lower() or ".png"
 
     video_path = upload_dir / f"input_video{video_ext}"
-    image_path = upload_dir / f"input_image{image_ext}"
+    image_path: Path | None = None
+    audio_path: Path | None = None
 
     video.save(video_path)
-    image.save(image_path)
+
+    if image and image.filename:
+        image_ext = Path(image.filename).suffix.lower() or ".png"
+        image_path = upload_dir / f"input_image{image_ext}"
+        image.save(image_path)
+
+    if audio and audio.filename:
+        audio_ext = Path(audio.filename).suffix.lower() or ".mp3"
+        audio_path = upload_dir / f"input_audio{audio_ext}"
+        audio.save(audio_path)
 
     result = process_video(
         video_path=str(video_path),
-        image_path=str(image_path),
+        image_path=str(image_path) if image_path else None,
         prompt=prompt,
         output_root=str(OUTPUT_DIR),
+        audio_path=str(audio_path) if audio_path else None,
     )
 
     if result.output_video.is_relative_to(OUTPUT_DIR):
@@ -123,6 +140,7 @@ def api_generate() -> object:
             "ok": result.ok,
             "message": result.message,
             "effects_applied": result.effects_applied,
+            "backend": result.backend,
             "output_video_url": output_url,
             "output_video_path": str(result.output_video),
             "job_dir": str(result.job_dir),

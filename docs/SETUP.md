@@ -14,7 +14,7 @@
 
 ## Uso rapido
 
-1. Sube video + imagen + prompt.
+1. Sube video + prompt (imagen/audio son opcionales).
 2. Pulsa `Generar video`.
 3. En el preview (derecha), pausa en el segundo exacto.
 4. Haz click o arrastra para marcar zona.
@@ -40,3 +40,6 @@ powershell -ExecutionPolicy Bypass -File .\scripts\create_desktop_shortcut.ps1
 
 - Si pones `OPENAI_API_KEY` en `.env`, el chat puede responder con IA online.
 - Si no hay API key, el chat funciona en modo local guiado.
+- Para generacion con Runway:
+  - define `RUNWAY_API_KEY` en `.env`
+  - deja `VIDEO_GEN_BACKEND=auto`

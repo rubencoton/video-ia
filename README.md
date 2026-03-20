@@ -3,7 +3,8 @@
 App local para Windows que permite:
 
 - subir un video
-- subir una imagen de referencia
+- subir una imagen de referencia (opcional)
+- subir audio externo (opcional)
 - escribir un prompt
 - generar un video de salida en `output/`
 - salida fija para Reels: `9:16` y `1080x1920`
@@ -18,6 +19,21 @@ App local para Windows que permite:
 3. Cargas video + imagen + prompt.
 4. Pulsa `Generar video`.
 5. Marca zonas en el preview y habla con la IA en el chat.
+
+## Backend de generacion (calidad-precio)
+
+- Modo por defecto: `VIDEO_GEN_BACKEND=auto`
+- En `auto`, la app usa:
+  - `Runway (gen4_aleph)` si hay `RUNWAY_API_KEY`
+  - `Local (ffmpeg)` como respaldo si Runway no esta disponible
+- Esto prioriza buena calidad con flujo practico para redes sociales.
+
+## Audio en salida
+
+- Si no subes audio externo:
+  - se conserva el audio del video base
+- Si subes audio externo:
+  - se usa ese audio en el resultado final
 
 ## Acceso directo de escritorio
 

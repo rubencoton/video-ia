@@ -2,6 +2,7 @@
   const el = {
     videoInput: document.getElementById("videoInput"),
     imageInput: document.getElementById("imageInput"),
+    audioInput: document.getElementById("audioInput"),
     promptInput: document.getElementById("promptInput"),
     generateBtn: document.getElementById("generateBtn"),
     statusBox: document.getElementById("statusBox"),
@@ -242,14 +243,11 @@
   async function generateVideo() {
     const videoFile = el.videoInput.files[0];
     const imageFile = el.imageInput.files[0];
+    const audioFile = el.audioInput.files[0];
     const prompt = el.promptInput.value.trim();
 
     if (!videoFile) {
       setStatus("Falta elegir video.", true);
-      return;
-    }
-    if (!imageFile) {
-      setStatus("Falta elegir imagen.", true);
       return;
     }
     if (!prompt) {
@@ -259,7 +257,12 @@
 
     const body = new FormData();
     body.append("video", videoFile);
-    body.append("image", imageFile);
+    if (imageFile) {
+      body.append("image", imageFile);
+    }
+    if (audioFile) {
+      body.append("audio", audioFile);
+    }
     body.append("prompt", prompt);
 
     el.generateBtn.disabled = true;
@@ -289,7 +292,8 @@
         "assistant",
         "Video listo. Ya puedes conversar conmigo y crear marcas sobre el preview."
       );
-      setStatus(data.message || "Video generado.");
+      const backendText = data.backend ? `Backend usado: ${data.backend}.` : "";
+      setStatus(`${data.message || "Video generado."}\n${backendText}`.trim());
     } catch (err) {
       setStatus(`Fallo de red/local: ${String(err)}`, true);
     } finally {
