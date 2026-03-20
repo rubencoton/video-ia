@@ -11,6 +11,8 @@ __pycache__/
 # Salidas y temporales
 output/*
 !output/.gitkeep
+input/web_uploads/*
+!input/web_uploads/.gitkeep
 tmp/
 temp/
 *.log

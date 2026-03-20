@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VIDEO IA LOCAL</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="left-panel">
+        <h1>VIDEO IA</h1>
+        <p class="subtitle">Chat IA + marcas sobre video en tiempo y posicion.</p>
+
+        <section class="card">
+          <h2>1) Generar video</h2>
+          <label for="videoInput">Video</label>
+          <input id="videoInput" type="file" accept=".mp4,.mov,.mkv,.avi,.webm" />
+
+          <label for="imageInput">Imagen</label>
+          <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp" />
+
+          <label for="promptInput">Prompt</label>
+          <textarea
+            id="promptInput"
+            placeholder="Ejemplo: estilo cinematic, mas brillo, fondo mas limpio"
+          ></textarea>
+
+          <button id="generateBtn" class="primary">Generar video</button>
+          <div id="statusBox" class="status">Listo para generar.</div>
+        </section>
+
+        <section class="card">
+          <h2>2) Chat con IA</h2>
+          <div id="chatMessages" class="chat-messages"></div>
+          <textarea
+            id="chatInput"
+            placeholder="Escribe aqui... Ejemplo: cambia solo la zona de la marca #2"
+          ></textarea>
+          <button id="sendChatBtn">Enviar mensaje</button>
+        </section>
+
+        <section class="card">
+          <h2>3) Marcas</h2>
+          <p class="tiny">
+            Haz click para punto o arrastra para rectangulo. Se guarda tiempo + posicion.
+          </p>
+          <div class="row">
+            <button id="clearMarkersBtn" class="danger">Borrar marcas</button>
+            <button id="exportMarkersBtn">Exportar JSON</button>
+          </div>
+          <ul id="markerList" class="marker-list"></ul>
+        </section>
+      </aside>
+
+      <main class="right-panel">
+        <header class="preview-header">
+          <h2>PREVIEW</h2>
+          <div id="timeLabel">Tiempo: 00:00</div>
+        </header>
+
+        <div class="video-stage" id="videoStage">
+          <video id="previewVideo" controls></video>
+          <canvas id="overlayCanvas"></canvas>
+        </div>
+
+        <p class="tiny right-hint">
+          Tip: pausa el video en el segundo exacto y marca la zona concreta.
+        </p>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
