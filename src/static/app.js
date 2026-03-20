@@ -5,6 +5,7 @@
     audioInput: document.getElementById("audioInput"),
     promptInput: document.getElementById("promptInput"),
     generateBtn: document.getElementById("generateBtn"),
+    setupBox: document.getElementById("setupBox"),
     statusBox: document.getElementById("statusBox"),
     chatMessages: document.getElementById("chatMessages"),
     chatInput: document.getElementById("chatInput"),
@@ -33,6 +34,17 @@
     el.statusBox.textContent = text;
     el.statusBox.style.borderLeftColor = isError ? "#b42318" : "#0f7a46";
     el.statusBox.style.background = isError ? "#feeceb" : "#e7f6ee";
+  }
+
+  function setSetupStatus(text, isWarning = true) {
+    el.setupBox.textContent = text;
+    if (isWarning) {
+      el.setupBox.style.borderLeftColor = "#bd7400";
+      el.setupBox.style.background = "#fff5e8";
+      return;
+    }
+    el.setupBox.style.borderLeftColor = "#0f7a46";
+    el.setupBox.style.background = "#e7f6ee";
   }
 
   function formatTime(sec) {
@@ -440,10 +452,39 @@
     });
   }
 
+  async function loadSystemStatus() {
+    try {
+      const res = await fetch("/api/system-status");
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setSetupStatus("No se pudo leer estado del sistema.", true);
+        return;
+      }
+
+      if (data.effective_backend === "runway") {
+        setSetupStatus(
+          `Modo nube activo: Runway.\nFormato fijo de salida: ${data.output_format}.`,
+          false
+        );
+        return;
+      }
+
+      setSetupStatus(
+        "Modo local activo (sin cuentas).\n" +
+          "Puedes generar ya mismo en 1080x1920.\n" +
+          "Para activar nube despues: añade RUNWAY_API_KEY en .env.",
+        true
+      );
+    } catch (err) {
+      setSetupStatus(`Estado no disponible: ${String(err)}`, true);
+    }
+  }
+
   function init() {
     bindEvents();
     renderMarkers();
     resizeCanvas();
+    loadSystemStatus();
     addChatMessage("assistant", "Hola. Carga un video y empezamos a editar por zonas.");
   }
 

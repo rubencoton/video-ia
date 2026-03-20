@@ -20,6 +20,17 @@ App local para Windows que permite:
 4. Pulsa `Generar video`.
 5. Marca zonas en el preview y habla con la IA en el chat.
 
+## Preparacion automatica (sin cuentas)
+
+Si no tienes nada configurado, ejecuta:
+
+1. `preparar_video_ia_remoto.cmd`
+2. Ese script:
+   - crea `.env`
+   - pone backend en `local`
+   - instala dependencias
+   - crea acceso directo de escritorio
+
 ## Backend de generacion (calidad-precio)
 
 - Modo por defecto: `VIDEO_GEN_BACKEND=auto`
@@ -27,6 +38,11 @@ App local para Windows que permite:
   - `Runway (gen4_aleph)` si hay `RUNWAY_API_KEY`
   - `Local (ffmpeg)` como respaldo si Runway no esta disponible
 - Esto prioriza buena calidad con flujo practico para redes sociales.
+
+Si no quieres cuentas por ahora:
+
+- usa `VIDEO_GEN_BACKEND=local`
+- todo funciona en tu PC sin API key
 
 ## Audio en salida
 

@@ -50,6 +50,13 @@ def _allowed_file(filename: str, valid_exts: set[str]) -> bool:
     return any(lower.endswith(ext) for ext in valid_exts)
 
 
+def _is_runway_configured() -> bool:
+    return bool(
+        os.getenv("RUNWAY_API_KEY", "").strip()
+        or os.getenv("RUNWAYML_API_SECRET", "").strip()
+    )
+
+
 def _find_free_port(start_port: int = 7860, max_tries: int = 40) -> int:
     for step in range(max_tries):
         port = start_port + step
@@ -70,8 +77,30 @@ def media(subpath: str) -> object:
     return send_from_directory(OUTPUT_DIR, subpath, as_attachment=False)
 
 
+@app.get("/api/system-status")
+def api_system_status() -> object:
+    _load_dotenv()
+    backend = os.getenv("VIDEO_GEN_BACKEND", "auto").strip().lower() or "auto"
+    if backend not in {"auto", "runway", "local"}:
+        backend = "auto"
+
+    runway_ok = _is_runway_configured()
+    effective = "runway" if (backend in {"auto", "runway"} and runway_ok) else "local"
+
+    return jsonify(
+        {
+            "ok": True,
+            "backend_config": backend,
+            "runway_configured": runway_ok,
+            "effective_backend": effective,
+            "output_format": "9:16 1080x1920",
+        }
+    )
+
+
 @app.post("/api/generate")
 def api_generate() -> object:
+    _load_dotenv()
     _ensure_folders()
 
     video = request.files.get("video")
@@ -150,6 +179,7 @@ def api_generate() -> object:
 
 @app.post("/api/chat")
 def api_chat() -> object:
+    _load_dotenv()
     payload = request.get_json(silent=True) or {}
 
     user_message = str(payload.get("message", "")).strip()

@@ -8,9 +8,20 @@
 
 ## Primer arranque
 
-1. Abrir `iniciar_video_ia.cmd`.
-2. Esperar instalacion automatica de dependencias.
-3. Se abrira la app en navegador local.
+1. Ejecutar `preparar_video_ia_remoto.cmd` (una sola vez).
+2. Abrir `iniciar_video_ia.cmd`.
+3. Esperar instalacion automatica de dependencias.
+4. Se abrira la app en navegador local.
+
+## Lo unico manual que no se puede hacer remoto
+
+Solo si quieres modo nube Runway:
+
+1. Crear cuenta Runway.
+2. Sacar API key.
+3. Pegar `RUNWAY_API_KEY=...` en `.env`.
+
+Sin eso, la app funciona igual en modo local.
 
 ## Uso rapido
 

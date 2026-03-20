@@ -128,6 +128,16 @@ button:hover {
   white-space: pre-wrap;
 }
 
+.setup-box {
+  margin-top: 10px;
+  border-left: 4px solid #bd7400;
+  background: #fff5e8;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+
 .chat-messages {
   border: 1px solid var(--line);
   border-radius: 10px;
