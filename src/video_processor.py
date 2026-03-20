@@ -635,11 +635,17 @@ def _process_with_runway_backend(
             backend="runway",
         )
     except Exception as exc:
+        err_text = str(exc)
+        if "At least one credit purchase is required" in err_text:
+            err_text = (
+                "Runway conectado pero bloqueado: hace falta comprar "
+                "al menos un paquete de creditos en Runway API."
+            )
         return ProcessResult(
             ok=False,
             output_video=prepared_video,
             job_dir=job_dir,
-            message=f"Fallo backend Runway: {exc}",
+            message=f"Fallo backend Runway: {err_text}",
             effects_applied=[],
             backend="runway",
         )

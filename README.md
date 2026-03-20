@@ -44,6 +44,11 @@ Si no quieres cuentas por ahora:
 - usa `VIDEO_GEN_BACKEND=local`
 - todo funciona en tu PC sin API key
 
+Nota importante de Runway API:
+
+- Aunque tengas API key, Runway API puede pedir una primera compra de creditos
+  para habilitar uploads por API.
+
 ## Audio en salida
 
 - Si no subes audio externo:
