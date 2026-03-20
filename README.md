@@ -6,6 +6,7 @@ App local para Windows que permite:
 - subir una imagen de referencia
 - escribir un prompt
 - generar un video de salida en `output/`
+- salida fija para Reels: `9:16` y `1080x1920`
 - ver preview a la derecha
 - chatear con IA a la izquierda
 - marcar zonas del video por tiempo y posicion (punto o rectangulo)
@@ -39,6 +40,12 @@ La app detecta palabras del prompt y aplica filtros automaticos:
 - `cinematic`
 
 Si no detecta una palabra conocida, genera video con la imagen de referencia superpuesta.
+
+## Formato de salida fijo
+
+- Todos los videos se exportan en `9:16` (vertical).
+- Resolucion fija: `1080 x 1920`.
+- Codificacion compatible: `H.264 + AAC`.
 
 ## Marcas en el video
 

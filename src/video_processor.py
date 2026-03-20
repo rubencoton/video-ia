@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import List
 
 
+TARGET_WIDTH = 1080
+TARGET_HEIGHT = 1920
+TARGET_RATIO_LABEL = "9:16 (1080x1920)"
+
+
 @dataclass
 class ProcessResult:
     ok: bool
@@ -19,14 +24,22 @@ class ProcessResult:
 
 
 def _normalize(text: str) -> str:
-    return (
-        text.lower()
-        .replace("á", "a")
-        .replace("é", "e")
-        .replace("í", "i")
-        .replace("ó", "o")
-        .replace("ú", "u")
+    table = str.maketrans(
+        {
+            "á": "a",
+            "é": "e",
+            "í": "i",
+            "ó": "o",
+            "ú": "u",
+            "ä": "a",
+            "ë": "e",
+            "ï": "i",
+            "ö": "o",
+            "ü": "u",
+            "ñ": "n",
+        }
     )
+    return text.lower().translate(table)
 
 
 def _detect_effects(prompt: str) -> tuple[List[str], List[str]]:
@@ -127,23 +140,31 @@ def process_video(
             (
                 "No se encontro ffmpeg.\n"
                 "Se ha dejado una copia del video original.\n"
+                "No se puede garantizar formato fijo 1080x1920 sin ffmpeg.\n"
                 "Instala ffmpeg o imageio-ffmpeg para activar edicion automatica.\n"
             ),
             encoding="utf-8",
         )
         return ProcessResult(
-            ok=True,
+            ok=False,
             output_video=fallback_video,
             job_dir=job_dir,
-            message="Video generado sin filtros (ffmpeg no disponible).",
+            message=(
+                "No se encontro ffmpeg. "
+                "No se pudo forzar formato Reels 9:16 (1080x1920)."
+            ),
             effects_applied=[],
         )
 
-    video_chain = ",".join(filters) if filters else "null"
+    base_transform = (
+        f"scale={TARGET_WIDTH}:{TARGET_HEIGHT}:force_original_aspect_ratio=increase,"
+        f"crop={TARGET_WIDTH}:{TARGET_HEIGHT}"
+    )
+    video_chain = ",".join(filters + [base_transform]) if filters else base_transform
     filter_complex = (
         f"[0:v]{video_chain}[base];"
-        "[1:v]scale=320:-1[ref];"
-        "[base][ref]overlay=W-w-20:20[outv]"
+        "[1:v]scale=280:-1[ref];"
+        "[base][ref]overlay=W-w-24:24[outv]"
     )
 
     command = [
@@ -167,6 +188,10 @@ def process_video(
         "medium",
         "-crf",
         "21",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
         "-c:a",
         "aac",
         "-b:a",
@@ -207,6 +232,8 @@ def process_video(
         "input_video": str(src_video),
         "input_image": str(src_image),
         "output_video": str(output_video),
+        "output_ratio": TARGET_RATIO_LABEL,
+        "output_resolution": f"{TARGET_WIDTH}x{TARGET_HEIGHT}",
     }
     (job_dir / "resumen.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2),
@@ -214,9 +241,15 @@ def process_video(
     )
 
     if labels:
-        status_msg = "Video generado con efectos: " + ", ".join(labels)
+        status_msg = (
+            "Video generado en formato Reels 9:16 (1080x1920) con efectos: "
+            + ", ".join(labels)
+        )
     else:
-        status_msg = "Video generado (sin efecto detectado en prompt, con imagen aplicada)."
+        status_msg = (
+            "Video generado en formato Reels 9:16 (1080x1920) "
+            "(sin efecto detectado en prompt, con imagen aplicada)."
+        )
 
     return ProcessResult(
         ok=True,
