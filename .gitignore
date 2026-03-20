@@ -1,0 +1,22 @@
+# Entorno
+.env
+.env.local
+
+# Dependencias
+node_modules/
+.venv/
+venv/
+__pycache__/
+
+# Salidas y temporales
+output/*
+!output/.gitkeep
+tmp/
+temp/
+*.log
+
+# SO / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
