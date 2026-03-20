@@ -214,11 +214,35 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 
 .preview-header h2 {
   margin: 0;
   font-size: 24px;
+}
+
+.preview-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-mark {
+  width: auto;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.toggle-mark.off {
+  background: #eaf0fa;
+  color: #133159;
+}
+
+.toggle-mark.on {
+  background: #ffe9c7;
+  color: #6b3d00;
 }
 
 #timeLabel {
@@ -252,6 +276,11 @@ button:hover {
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+  cursor: default;
+}
+
+#overlayCanvas.mark-enabled {
   pointer-events: auto;
   cursor: crosshair;
 }

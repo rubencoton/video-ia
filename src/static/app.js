@@ -13,6 +13,7 @@
     markerList: document.getElementById("markerList"),
     clearMarkersBtn: document.getElementById("clearMarkersBtn"),
     exportMarkersBtn: document.getElementById("exportMarkersBtn"),
+    toggleMarkModeBtn: document.getElementById("toggleMarkModeBtn"),
     previewVideo: document.getElementById("previewVideo"),
     overlayCanvas: document.getElementById("overlayCanvas"),
     timeLabel: document.getElementById("timeLabel"),
@@ -24,6 +25,7 @@
     markerSeq: 1,
     chatHistory: [],
     outputVideoPath: "",
+    markModeEnabled: false,
     dragging: null,
     draggingCurrent: null,
   };
@@ -66,6 +68,21 @@
     el.chatMessages.appendChild(box);
     el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
     state.chatHistory.push({ role, content: safeText });
+  }
+
+  function updateMarkModeUi() {
+    if (state.markModeEnabled) {
+      el.toggleMarkModeBtn.textContent = "Modo marcar: ON";
+      el.toggleMarkModeBtn.classList.remove("off");
+      el.toggleMarkModeBtn.classList.add("on");
+      el.overlayCanvas.classList.add("mark-enabled");
+      return;
+    }
+
+    el.toggleMarkModeBtn.textContent = "Modo marcar: OFF";
+    el.toggleMarkModeBtn.classList.remove("on");
+    el.toggleMarkModeBtn.classList.add("off");
+    el.overlayCanvas.classList.remove("mark-enabled");
   }
 
   function getVideoBoxPixels() {
@@ -322,10 +339,14 @@
     addChatMessage("user", message);
     el.chatInput.value = "";
     el.sendChatBtn.disabled = true;
+    let timeoutRef = null;
+    const controller = new AbortController();
 
     try {
+      timeoutRef = window.setTimeout(() => controller.abort(), 25000);
       const res = await fetch("/api/chat", {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
         },
@@ -345,8 +366,15 @@
       }
       addChatMessage("assistant", data.reply || "Sin respuesta.");
     } catch (err) {
-      addChatMessage("assistant", `Error de chat: ${String(err)}`);
+      if (String(err).toLowerCase().includes("abort")) {
+        addChatMessage("assistant", "El chat tardo demasiado. Intenta enviar de nuevo.");
+      } else {
+        addChatMessage("assistant", `Error de chat: ${String(err)}`);
+      }
     } finally {
+      if (timeoutRef) {
+        window.clearTimeout(timeoutRef);
+      }
       el.sendChatBtn.disabled = false;
     }
   }
@@ -372,6 +400,15 @@
   function bindEvents() {
     el.generateBtn.addEventListener("click", generateVideo);
     el.sendChatBtn.addEventListener("click", sendChat);
+    el.toggleMarkModeBtn.addEventListener("click", () => {
+      state.markModeEnabled = !state.markModeEnabled;
+      updateMarkModeUi();
+      if (state.markModeEnabled) {
+        setStatus("Modo marcar activado. Haz click o arrastra sobre el video.");
+      } else {
+        setStatus("Modo marcar desactivado. Ya puedes usar play y la barra del video.");
+      }
+    });
     el.clearMarkersBtn.addEventListener("click", () => {
       state.markers = [];
       renderMarkers();
@@ -401,6 +438,9 @@
     window.addEventListener("orientationchange", resizeCanvas);
 
     el.overlayCanvas.addEventListener("mousedown", (event) => {
+      if (!state.markModeEnabled) {
+        return;
+      }
       if (!el.previewVideo.src) {
         setStatus("Primero genera un video para poder marcar.", true);
         return;
@@ -419,6 +459,9 @@
     });
 
     el.overlayCanvas.addEventListener("mousemove", (event) => {
+      if (!state.markModeEnabled) {
+        return;
+      }
       if (!state.dragging) {
         return;
       }
@@ -431,6 +474,9 @@
     });
 
     el.overlayCanvas.addEventListener("mouseup", (event) => {
+      if (!state.markModeEnabled) {
+        return;
+      }
       if (!state.dragging) {
         return;
       }
@@ -444,6 +490,9 @@
     });
 
     el.overlayCanvas.addEventListener("mouseleave", () => {
+      if (!state.markModeEnabled) {
+        return;
+      }
       if (!state.dragging) {
         return;
       }
@@ -472,7 +521,7 @@
       setSetupStatus(
         "Modo local activo (sin cuentas).\n" +
           "Puedes generar ya mismo en 1080x1920.\n" +
-          "Para activar nube despues: añade RUNWAY_API_KEY en .env.",
+          "Para activar nube despues: anade RUNWAY_API_KEY en .env.",
         true
       );
     } catch (err) {
@@ -483,6 +532,7 @@
   function init() {
     bindEvents();
     renderMarkers();
+    updateMarkModeUi();
     resizeCanvas();
     loadSystemStatus();
     addChatMessage("assistant", "Hola. Carga un video y empezamos a editar por zonas.");

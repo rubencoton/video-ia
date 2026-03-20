@@ -86,6 +86,8 @@ Si no detecta una palabra conocida, genera video con la imagen de referencia sup
 
 ## Marcas en el video
 
+- Usa `Modo marcar: OFF` para reproducir/mover barra del video.
+- Cambia a `Modo marcar: ON` para crear marcas.
 - Haz click para crear marca de punto.
 - Arrastra para crear marca rectangular.
 - Cada marca guarda:

@@ -62,7 +62,12 @@
       <main class="right-panel">
         <header class="preview-header">
           <h2>PREVIEW</h2>
-          <div id="timeLabel">Tiempo: 00:00</div>
+          <div class="preview-tools">
+            <button id="toggleMarkModeBtn" class="toggle-mark off" type="button">
+              Modo marcar: OFF
+            </button>
+            <div id="timeLabel">Tiempo: 00:00</div>
+          </div>
         </header>
 
         <div class="video-stage" id="videoStage">
@@ -71,7 +76,7 @@
         </div>
 
         <p class="tiny right-hint">
-          Tip: pausa el video en el segundo exacto y marca la zona concreta.
+          Tip: OFF para reproducir el video. ON para marcar zonas.
         </p>
       </main>
     </div>
