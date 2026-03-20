@@ -13,6 +13,11 @@ output/*
 !output/.gitkeep
 input/web_uploads/*
 !input/web_uploads/.gitkeep
+input/audit_temp/*
+!input/audit_temp/.gitkeep
+reports/audit_*
+reports/*.pid
+reports/*.txt
 tmp/
 temp/
 *.log

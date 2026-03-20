@@ -31,6 +31,15 @@ Si no tienes nada configurado, ejecuta:
    - instala dependencias
    - crea acceso directo de escritorio
 
+## Auditoria de funcionamiento
+
+- Lanzar auditoria de 2 horas en segundo plano:
+  - `auditoria_2h.cmd`
+- Ver estado de auditoria:
+  - `powershell -ExecutionPolicy Bypass -File .\scripts\check_2h_audit.ps1`
+- Reportes:
+  - carpeta `reports/`
+
 ## Backend de generacion (calidad-precio)
 
 - Modo por defecto: `VIDEO_GEN_BACKEND=auto`
