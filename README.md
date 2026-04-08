@@ -1,50 +1,50 @@
-# SEEDANCE RUBEN COTON (APLICACIÓN ÚNICA)
+﻿# SEEDANCE RUBEN COTON (APLICACIÃ“N ÃšNICA)
 
-Aplicación local unificada con dos modos en una sola interfaz:
+AplicaciÃ³n local unificada con dos modos en una sola interfaz:
 
-1. `VIDEO IA`: edición de vídeo subido (vídeo + imagen + audio + chat + marcas)
-2. `SIDANCE local`: texto a vídeo en local (sin API externa de pago)
+1. `VIDEO IA`: ediciÃ³n de vÃ­deo subido (vÃ­deo + imagen + audio + chat + marcas)
+2. `SIDANCE local`: texto a vÃ­deo en local (sin API externa de pago)
 
-## Base de fusión
+## Base de fusiÃ³n
 
-- Aplicación A (base): `video-ia`
-- Aplicación B integrada: `SEEDANCE/APP_LOCAL_CERO` (Zidans/Sidance local)
+- AplicaciÃ³n A (base): `video-ia`
+- AplicaciÃ³n B integrada: `SEEDANCE/APP_LOCAL_CERO` (Zidans/Sidance local)
 
-La fusión se hizo sobre la aplicación A para conservar todo lo que ya funcionaba en VIDEO IA.
+La fusiÃ³n se hizo sobre la aplicaciÃ³n A para conservar todo lo que ya funcionaba en VIDEO IA.
 
 ## Funciones disponibles
 
 ### VIDEO IA (flujo original conservado)
 
-- Subida de vídeo, imagen y audio opcionales
-- Texto de instrucción libre
-- Texto superpuesto configurable (posición, tamaño y color)
+- Subida de vÃ­deo, imagen y audio opcionales
+- Texto de instrucciÃ³n libre
+- Texto superpuesto configurable (posiciÃ³n, tamaÃ±o y color)
 - Vista previa del resultado
 - Chat IA contextual
-- Marcas por tiempo y posición (punto y rectángulo)
-- Exportación JSON de marcas
+- Marcas por tiempo y posiciÃ³n (punto y rectÃ¡ngulo)
+- ExportaciÃ³n JSON de marcas
 - Salida fija Reels `1080x1920` para este modo
-- Soporte de composición completa: `video + imagen + audio + texto + prompt`
-- Si subes solo imagen, la app crea vídeo base y aplica prompt + audio + texto
+- Soporte de composiciÃ³n completa: `video + imagen + audio + texto + prompt`
+- Si subes solo imagen, la app crea vÃ­deo base y aplica prompt + audio + texto
 
 ### SIDANCE local (nuevo flujo integrado)
 
-- Texto a vídeo local
+- Texto a vÃ­deo local
 - Modelo local por defecto: `THUDM/CogVideoX1.5-5B`
-- Parámetros editables: calidad, pasos, guía de ajuste y semilla
+- ParÃ¡metros editables: calidad, pasos, guÃ­a de ajuste y semilla
 - Sin uso de API de pago para este modo
 
-## Arranque rápido
+## Arranque rÃ¡pido
 
 1. Ejecuta `iniciar_seedance_ruben_coton.cmd`
 2. Se abre en `http://127.0.0.1:7860` (o puerto libre cercano)
 3. En la izquierda eliges modo:
-   - `VIDEO IA (editar vídeo subido)`
-   - `SIDANCE local (texto a vídeo)`
+   - `VIDEO IA (editar vÃ­deo subido)`
+   - `SIDANCE local (texto a vÃ­deo)`
 
 ## Dependencias
 
-### Mínimas (siempre)
+### MÃ­nimas (siempre)
 
 Instaladas por `iniciar_video_ia.cmd`:
 
@@ -53,7 +53,7 @@ Instaladas por `iniciar_video_ia.cmd`:
 
 ### Extra para SIDANCE local
 
-Instala una vez si quieres activar texto a vídeo local:
+Instala una vez si quieres activar texto a vÃ­deo local:
 
 ```bash
 pip install -r requirements_sidance_local.txt
@@ -61,7 +61,7 @@ pip install -r requirements_sidance_local.txt
 
 Notas:
 - Requiere GPU NVIDIA con CUDA para generar con SIDANCE local.
-- La primera ejecución del modelo descarga pesos (archivo grande).
+- La primera ejecuciÃ³n del modelo descarga pesos (archivo grande).
 
 ## Variables de entorno
 
@@ -77,11 +77,11 @@ Variables relevantes:
 - `SIDANCE_LOCAL_NUM_FRAMES=49`
 - `SIDANCE_LOCAL_FPS=16`
 
-## Scripts útiles
+## Scripts Ãºtiles
 
 - `iniciar_seedance_ruben_coton.cmd` -> lanzador principal
 - `iniciar_video_ia.cmd` -> lanzador compatible anterior
-- `preparar_video_ia_remoto.cmd` -> preparación local base
+- `preparar_video_ia_remoto.cmd` -> preparaciÃ³n local base
 - `scripts/normalizar_accesos_directos_seedance.ps1` -> deja un solo acceso directo y guarda duplicados en respaldo
 
 ## Estructura
@@ -148,3 +148,10 @@ main
 - Estado: sincronizado para migracion a nuevo PC/sistema.
 - Preparado para retomar desde GitHub.
 - Ultima revision: 2026-04-08 15:26:05 +02:00
+
+<!-- MIGRACION_CLOUD_START -->
+## ESTADO MIGRACION CLOUD
+- Revisado: 2026-04-08
+- Repo listo para continuar en otro sistema.
+- Estado Git al cerrar: sincronizado en GitHub.
+<!-- MIGRACION_CLOUD_END -->
