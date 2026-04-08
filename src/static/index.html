@@ -3,36 +3,93 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>VIDEO IA LOCAL</title>
+    <title>SEEDANCE RUBEN COTON</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <aside class="left-panel">
-        <h1>VIDEO IA</h1>
+        <h1>SEEDANCE RUBEN COTON</h1>
         <p class="subtitle">
-          Chat IA + marcas sobre video en tiempo y posicion. Salida fija Reels 1080x1920.
+          Aplicación unificada: VIDEO IA + SIDANCE local en una sola interfaz.
         </p>
 
         <section class="card">
-          <h2>1) Generar video</h2>
-          <label for="videoInput">Video</label>
-          <input id="videoInput" type="file" accept=".mp4,.mov,.mkv,.avi,.webm" />
+          <h2>1) Generar vídeo</h2>
+          <label for="generationMode">Modo</label>
+          <select id="generationMode">
+            <option value="video_ia">VIDEO IA (editar vídeo subido)</option>
+            <option value="sidance_local">SIDANCE local (texto a vídeo)</option>
+          </select>
 
-          <label for="imageInput">Imagen (opcional)</label>
-          <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp" />
+          <div id="videoInputsBlock">
+            <label for="videoInput">Vídeo</label>
+            <input id="videoInput" type="file" accept=".mp4,.mov,.mkv,.avi,.webm" />
 
-          <label for="audioInput">Audio externo (opcional)</label>
-          <input id="audioInput" type="file" accept=".mp3,.wav,.m4a,.aac,.ogg,.flac" />
+            <label for="imageInput">Imagen (opcional)</label>
+            <input id="imageInput" type="file" accept=".png,.jpg,.jpeg,.webp" />
 
-          <label for="promptInput">Prompt</label>
+            <label for="audioInput">Audio externo (opcional)</label>
+            <input id="audioInput" type="file" accept=".mp3,.wav,.m4a,.aac,.ogg,.flac" />
+
+            <label for="overlayText">Texto sobre el vídeo (opcional)</label>
+            <textarea
+              id="overlayText"
+              placeholder="Ejemplo: RUBEN COTON - Edición oficial"
+            ></textarea>
+
+            <label for="textPosition">Posición del texto</label>
+            <select id="textPosition">
+              <option value="abajo">Abajo</option>
+              <option value="centro">Centro</option>
+              <option value="arriba">Arriba</option>
+            </select>
+
+            <label for="textSize">Tamaño del texto</label>
+            <input id="textSize" type="number" min="18" max="110" value="46" />
+
+            <label for="textColor">Color del texto</label>
+            <select id="textColor">
+              <option value="blanco">Blanco</option>
+              <option value="amarillo">Amarillo</option>
+              <option value="cian">Cian</option>
+              <option value="rojo">Rojo</option>
+              <option value="negro">Negro</option>
+            </select>
+
+            <label for="imageDuration">Duración si subes solo imagen (segundos)</label>
+            <input id="imageDuration" type="number" min="1" max="600" step="1" value="8" />
+
+            <p class="tiny">
+              Si no subes vídeo y sí subes imagen, la app creará un vídeo base con esta duración.
+            </p>
+          </div>
+
+          <div id="sidanceInputsBlock" class="hidden-block">
+            <label for="sidanceSize">Calidad / velocidad</label>
+            <select id="sidanceSize">
+              <option value="720x480 (mas rapido)">720x480 (más rápido)</option>
+              <option value="1360x768 (mejor calidad)">1360x768 (mejor calidad)</option>
+            </select>
+
+            <label for="sidanceSteps">Pasos (16-60)</label>
+            <input id="sidanceSteps" type="number" min="16" max="60" value="28" />
+
+            <label for="sidanceGuidance">Guía de ajuste (3.0-12.0)</label>
+            <input id="sidanceGuidance" type="number" min="3" max="12" step="0.1" value="6.0" />
+
+            <label for="sidanceSeed">Semilla (-1 aleatorio)</label>
+            <input id="sidanceSeed" type="number" value="-1" />
+          </div>
+
+          <label for="promptInput">Texto de instrucción</label>
           <textarea
             id="promptInput"
-            placeholder="Ejemplo: estilo cinematic, mas brillo, fondo mas limpio"
+            placeholder="Ejemplo: estilo cinematográfico, más brillo, fondo más limpio"
           ></textarea>
 
-          <button id="generateBtn" class="primary">Generar video</button>
-          <div id="setupBox" class="setup-box">Comprobando configuracion...</div>
+          <button id="generateBtn" class="primary">Generar vídeo</button>
+          <div id="setupBox" class="setup-box">Comprobando configuración...</div>
           <div id="statusBox" class="status">Listo para generar.</div>
         </section>
 
@@ -49,7 +106,7 @@
         <section class="card">
           <h2>3) Marcas</h2>
           <p class="tiny">
-            Haz click para punto o arrastra para rectangulo. Se guarda tiempo + posicion.
+            Haz clic para punto o arrastra para rectángulo. Se guarda tiempo + posición.
           </p>
           <div class="row">
             <button id="clearMarkersBtn" class="danger">Borrar marcas</button>
@@ -61,7 +118,7 @@
 
       <main class="right-panel">
         <header class="preview-header">
-          <h2>PREVIEW</h2>
+          <h2>VISTA PREVIA</h2>
           <div class="preview-tools">
             <button id="toggleMarkModeBtn" class="toggle-mark off" type="button">
               Modo marcar: OFF
@@ -76,7 +133,7 @@
         </div>
 
         <p class="tiny right-hint">
-          Tip: OFF para reproducir el video. ON para marcar zonas.
+          Consejo: OFF para reproducir el vídeo. ON para marcar zonas.
         </p>
       </main>
     </div>

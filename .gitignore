@@ -21,6 +21,7 @@ reports/*.txt
 tmp/
 temp/
 *.log
+backups/
 
 # SO / editor
 .DS_Store

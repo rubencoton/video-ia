@@ -1,8 +1,20 @@
 (() => {
   const el = {
+    generationMode: document.getElementById("generationMode"),
+    videoInputsBlock: document.getElementById("videoInputsBlock"),
+    sidanceInputsBlock: document.getElementById("sidanceInputsBlock"),
     videoInput: document.getElementById("videoInput"),
     imageInput: document.getElementById("imageInput"),
     audioInput: document.getElementById("audioInput"),
+    overlayText: document.getElementById("overlayText"),
+    textPosition: document.getElementById("textPosition"),
+    textSize: document.getElementById("textSize"),
+    textColor: document.getElementById("textColor"),
+    imageDuration: document.getElementById("imageDuration"),
+    sidanceSize: document.getElementById("sidanceSize"),
+    sidanceSteps: document.getElementById("sidanceSteps"),
+    sidanceGuidance: document.getElementById("sidanceGuidance"),
+    sidanceSeed: document.getElementById("sidanceSeed"),
     promptInput: document.getElementById("promptInput"),
     generateBtn: document.getElementById("generateBtn"),
     setupBox: document.getElementById("setupBox"),
@@ -47,6 +59,25 @@
     }
     el.setupBox.style.borderLeftColor = "#0f7a46";
     el.setupBox.style.background = "#e7f6ee";
+  }
+
+  function getGenerationMode() {
+    return el.generationMode.value === "sidance_local" ? "sidance_local" : "video_ia";
+  }
+
+  function toggleGenerationModeUi() {
+    const mode = getGenerationMode();
+    const sidanceMode = mode === "sidance_local";
+
+    el.videoInputsBlock.classList.toggle("hidden-block", sidanceMode);
+    el.sidanceInputsBlock.classList.toggle("hidden-block", !sidanceMode);
+    el.generateBtn.textContent = sidanceMode ? "Generar vídeo SIDANCE local" : "Generar vídeo";
+
+    if (sidanceMode) {
+      setStatus("Modo SIDANCE local activo. Solo necesitas texto de instrucción.");
+      return;
+    }
+    setStatus("Modo VIDEO IA activo. Usa vídeo o imagen, más audio, texto y prompt.");
   }
 
   function formatTime(sec) {
@@ -202,7 +233,7 @@
     if (!state.markers.length) {
       const empty = document.createElement("li");
       empty.className = "marker-item";
-      empty.textContent = "Sin marcas aun.";
+      empty.textContent = "Sin marcas aún.";
       el.markerList.appendChild(empty);
       return;
     }
@@ -270,42 +301,73 @@
   }
 
   async function generateVideo() {
+    const mode = getGenerationMode();
     const videoFile = el.videoInput.files[0];
     const imageFile = el.imageInput.files[0];
     const audioFile = el.audioInput.files[0];
     const prompt = el.promptInput.value.trim();
 
-    if (!videoFile) {
-      setStatus("Falta elegir video.", true);
-      return;
-    }
     if (!prompt) {
-      setStatus("Falta escribir prompt.", true);
+      setStatus("Falta escribir el texto de instrucción.", true);
       return;
     }
 
-    const body = new FormData();
-    body.append("video", videoFile);
-    if (imageFile) {
-      body.append("image", imageFile);
+    if (mode === "video_ia" && !videoFile) {
+      if (!imageFile) {
+        setStatus("Falta elegir vídeo o imagen.", true);
+        return;
+      }
     }
-    if (audioFile) {
-      body.append("audio", audioFile);
+
+    if (mode === "video_ia" && !videoFile && imageFile) {
+      setStatus("Generaremos vídeo base desde imagen y aplicaremos tu instrucción.");
     }
-    body.append("prompt", prompt);
 
     el.generateBtn.disabled = true;
-    setStatus("Generando video... espera un momento.");
+    setStatus("Generando vídeo... espera un momento.");
 
     try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        body,
-      });
+      let res;
+      if (mode === "sidance_local") {
+        const payload = {
+          prompt,
+          size_label: String(el.sidanceSize.value || "").trim(),
+          num_inference_steps: Number(el.sidanceSteps.value || 28),
+          guidance_scale: Number(el.sidanceGuidance.value || 6),
+          seed: Number(el.sidanceSeed.value || -1),
+        };
+        res = await fetch("/api/generate-sidance", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        const body = new FormData();
+        body.append("video", videoFile);
+        if (imageFile) {
+          body.append("image", imageFile);
+        }
+        if (audioFile) {
+          body.append("audio", audioFile);
+        }
+        body.append("prompt", prompt);
+        body.append("overlay_text", String(el.overlayText.value || ""));
+        body.append("text_position", String(el.textPosition.value || "abajo"));
+        body.append("text_size", String(el.textSize.value || "46"));
+        body.append("text_color", String(el.textColor.value || "blanco"));
+        body.append("image_duration_seconds", String(el.imageDuration.value || "8"));
+        res = await fetch("/api/generate", {
+          method: "POST",
+          body,
+        });
+      }
+
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        setStatus(data.message || "Error generando video.", true);
+        setStatus(data.message || "Error generando vídeo.", true);
         return;
       }
 
@@ -314,17 +376,23 @@
       state.markerSeq = 1;
       renderMarkers();
 
+      if (!data.output_video_url) {
+        setStatus(data.message || "No se recibió vídeo de salida.", true);
+        return;
+      }
+
       const source = `${data.output_video_url}?ts=${Date.now()}`;
       el.previewVideo.src = source;
       el.previewVideo.load();
       addChatMessage(
         "assistant",
-        "Video listo. Ya puedes conversar conmigo y crear marcas sobre el preview."
+        "Vídeo listo. Ya puedes conversar conmigo y crear marcas sobre la vista previa."
       );
-      const backendText = data.backend ? `Backend usado: ${data.backend}.` : "";
-      setStatus(`${data.message || "Video generado."}\n${backendText}`.trim());
+      const backendText = data.backend ? `Motor usado: ${data.backend}.` : "";
+      const modelText = data.model_id ? `Modelo: ${data.model_id}.` : "";
+      setStatus(`${data.message || "Vídeo generado."}\n${backendText}\n${modelText}`.trim());
     } catch (err) {
-      setStatus(`Fallo de red/local: ${String(err)}`, true);
+      setStatus(`Fallo de red o local: ${String(err)}`, true);
     } finally {
       el.generateBtn.disabled = false;
     }
@@ -367,7 +435,7 @@
       addChatMessage("assistant", data.reply || "Sin respuesta.");
     } catch (err) {
       if (String(err).toLowerCase().includes("abort")) {
-        addChatMessage("assistant", "El chat tardo demasiado. Intenta enviar de nuevo.");
+        addChatMessage("assistant", "El chat tardó demasiado. Intenta enviar de nuevo.");
       } else {
         addChatMessage("assistant", `Error de chat: ${String(err)}`);
       }
@@ -398,22 +466,25 @@
   }
 
   function bindEvents() {
+    el.generationMode.addEventListener("change", () => {
+      toggleGenerationModeUi();
+    });
     el.generateBtn.addEventListener("click", generateVideo);
     el.sendChatBtn.addEventListener("click", sendChat);
     el.toggleMarkModeBtn.addEventListener("click", () => {
       state.markModeEnabled = !state.markModeEnabled;
       updateMarkModeUi();
       if (state.markModeEnabled) {
-        setStatus("Modo marcar activado. Haz click o arrastra sobre el video.");
+        setStatus("Modo marcar activado. Haz clic o arrastra sobre el vídeo.");
       } else {
-        setStatus("Modo marcar desactivado. Ya puedes usar play y la barra del video.");
+        setStatus("Modo marcar desactivado. Ya puedes usar play y la barra del vídeo.");
       }
     });
     el.clearMarkersBtn.addEventListener("click", () => {
       state.markers = [];
       renderMarkers();
       drawOverlay();
-      setStatus("Marcas borradas.");
+      setStatus("Marcas eliminadas.");
     });
     el.exportMarkersBtn.addEventListener("click", exportMarkersAsJson);
 
@@ -442,7 +513,7 @@
         return;
       }
       if (!el.previewVideo.src) {
-        setStatus("Primero genera un video para poder marcar.", true);
+        setStatus("Primero genera un vídeo para poder marcar.", true);
         return;
       }
       const point = normalizeEventPosition(event);
@@ -510,19 +581,27 @@
         return;
       }
 
-      if (data.effective_backend === "runway") {
-        setSetupStatus(
-          `Modo nube activo: Runway.\nFormato fijo de salida: ${data.output_format}.`,
-          false
-        );
-        return;
-      }
+      const sidance = data.sidance || {};
+      const sidanceReady = Boolean(sidance.available);
+      const sidanceModel = sidance.model_id ? ` (${sidance.model_id})` : "";
+      const sidanceLine = sidanceReady
+        ? `SIDANCE local listo${sidanceModel}.`
+        : `SIDANCE local no disponible: ${sidance.message || "revisa GPU/dependencias"}.`;
 
+      const backendLine =
+        data.effective_backend === "runway"
+          ? "Modo nube activo: Runway."
+          : "Modo local activo (sin cuentas).";
+
+      const extraLine =
+        data.effective_backend === "runway"
+          ? "Si Runway falla, la aplicación usa local como respaldo."
+          : "Para activar nube después: añade RUNWAY_API_KEY en .env.";
+
+      const warning = !sidanceReady;
       setSetupStatus(
-        "Modo local activo (sin cuentas).\n" +
-          "Puedes generar ya mismo en 1080x1920.\n" +
-          "Para activar nube despues: anade RUNWAY_API_KEY en .env.",
-        true
+        `${backendLine}\nFormato fijo VIDEO IA: ${data.output_format}.\n${sidanceLine}\n${extraLine}`,
+        warning
       );
     } catch (err) {
       setSetupStatus(`Estado no disponible: ${String(err)}`, true);
@@ -533,9 +612,13 @@
     bindEvents();
     renderMarkers();
     updateMarkModeUi();
+    toggleGenerationModeUi();
     resizeCanvas();
     loadSystemStatus();
-    addChatMessage("assistant", "Hola. Carga un video y empezamos a editar por zonas.");
+    addChatMessage(
+      "assistant",
+      "Hola. Puedes usar VIDEO IA (editar) o SIDANCE local (texto a vídeo)."
+    );
   }
 
   init();

@@ -78,19 +78,31 @@ label {
 }
 
 input[type="file"],
+input[type="number"],
+select,
 textarea,
 button {
   width: 100%;
 }
 
+input[type="number"],
+select,
 textarea {
-  min-height: 82px;
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 9px;
-  resize: vertical;
   font-family: inherit;
   font-size: 14px;
+}
+
+textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
+input[type="number"],
+select {
+  min-height: 42px;
 }
 
 button {
@@ -202,6 +214,10 @@ button:hover {
 .row {
   display: flex;
   gap: 8px;
+}
+
+.hidden-block {
+  display: none;
 }
 
 .right-panel {

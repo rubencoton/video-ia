@@ -16,7 +16,7 @@ def _format_seconds(seconds: float) -> str:
 
 def _marker_brief(markers: list[dict[str, Any]]) -> str:
     if not markers:
-        return "No hay marcas aun."
+        return "No hay marcas aún."
 
     rows: list[str] = []
     for marker in markers[-12:]:
@@ -73,19 +73,19 @@ def _build_local_fallback(
     lines: list[str] = []
 
     lines.append("Perfecto. Te ayudo a editar por partes.")
-    lines.append(f"Tiempo actual del preview: {_format_seconds(current_time)}.")
+    lines.append(f"Tiempo actual de la vista previa: {_format_seconds(current_time)}.")
 
     if markers:
         last = markers[-1]
         lines.append(
             (
-                f"Ultima marca: #{last.get('id', '?')} "
+                f"Última marca: #{last.get('id', '?')} "
                 f"en {_format_seconds(float(last.get('time', 0.0)))} "
                 f"(x={float(last.get('x', 0.0)):.1f}%, y={float(last.get('y', 0.0)):.1f}%)."
             )
         )
     else:
-        lines.append("Aun no hay marcas. Haz click o arrastra sobre el video para crear la primera.")
+        lines.append("Aún no hay marcas. Haz clic o arrastra sobre el vídeo para crear la primera.")
 
     if "cara" in msg or "rostro" in msg:
         lines.append("Si quieres cambiar una cara, marca primero esa zona y dime el estilo exacto.")
@@ -122,9 +122,9 @@ def _call_openai_responses(
     marker_text = _marker_brief(markers)
     user_payload = (
         f"Mensaje del usuario:\n{user_message}\n\n"
-        f"Tiempo actual del preview: {_format_seconds(current_time)} ({current_time:.2f}s)\n\n"
-        f"Marcas activas:\n{marker_text}"
-    )
+            f"Tiempo actual de la vista previa: {_format_seconds(current_time)} ({current_time:.2f}s)\n\n"
+            f"Marcas activas:\n{marker_text}"
+        )
 
     input_payload: list[dict[str, Any]] = [
         {
@@ -176,13 +176,13 @@ def generate_chat_reply(
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
 
     system_prompt = (
-        "Eres un asistente de edicion de video para una app local.\n"
-        "Hablas en espanol simple.\n"
+        "Eres un asistente de edición de vídeo para una aplicación local.\n"
+        "Hablas en español de España, claro y simple.\n"
         "Responde con frases cortas y directas.\n"
-        "Si hay marcas de tiempo/posicion, usalas para dar instrucciones concretas.\n"
-        "Evita jerga tecnica.\n"
+        "Si hay marcas de tiempo/posición, úsalas para dar instrucciones concretas.\n"
+        "Evita jerga técnica.\n"
         "No inventes datos.\n"
-        "Si falta una marca, pide al usuario que la cree en el preview."
+        "Si falta una marca, pide al usuario que la cree en la vista previa."
     )
 
     if api_key:

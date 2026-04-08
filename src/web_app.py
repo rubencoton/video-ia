@@ -11,7 +11,8 @@ from uuid import uuid4
 from flask import Flask, jsonify, request, send_from_directory
 
 from ai_chat import generate_chat_reply
-from video_processor import process_video
+from sidance_local import generate_sidance_video, get_sidance_status
+from video_composer import process_multimodal_video
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -86,6 +87,7 @@ def api_system_status() -> object:
 
     runway_ok = _is_runway_configured()
     effective = "runway" if (backend in {"auto", "runway"} and runway_ok) else "local"
+    sidance_status = get_sidance_status()
 
     return jsonify(
         {
@@ -94,6 +96,7 @@ def api_system_status() -> object:
             "runway_configured": runway_ok,
             "effective_backend": effective,
             "output_format": "9:16 1080x1920",
+            "sidance": sidance_status,
         }
     )
 
@@ -107,37 +110,58 @@ def api_generate() -> object:
     image = request.files.get("image")
     audio = request.files.get("audio")
     prompt = str(request.form.get("prompt", "")).strip()
+    overlay_text = str(request.form.get("overlay_text", "")).strip()
+    text_position = str(request.form.get("text_position", "abajo")).strip()
+    text_color = str(request.form.get("text_color", "blanco")).strip()
 
-    if not video or not video.filename:
-        return jsonify({"ok": False, "message": "Falta el archivo de video."}), 400
+    text_size_raw = str(request.form.get("text_size", "")).strip()
+    image_seconds_raw = str(request.form.get("image_duration_seconds", "")).strip()
+
+    try:
+        text_size = int(text_size_raw) if text_size_raw else None
+    except ValueError:
+        text_size = None
+
+    try:
+        image_duration_seconds = (
+            float(image_seconds_raw) if image_seconds_raw else None
+        )
+    except ValueError:
+        image_duration_seconds = None
+
+    if (not video or not video.filename) and (not image or not image.filename):
+        return jsonify({"ok": False, "message": "Debes subir un vídeo o una imagen."}), 400
     if not prompt:
-        return jsonify({"ok": False, "message": "Falta el prompt."}), 400
+        return jsonify({"ok": False, "message": "Falta el texto de instrucción."}), 400
 
-    if not _allowed_file(video.filename, {".mp4", ".mov", ".mkv", ".avi", ".webm"}):
-        return jsonify({"ok": False, "message": "Formato de video no soportado."}), 400
+    if video and video.filename and not _allowed_file(
+        video.filename, {".mp4", ".mov", ".mkv", ".avi", ".webm"}
+    ):
+        return jsonify({"ok": False, "message": "Formato de vídeo no soportado."}), 400
 
     if image and image.filename and not _allowed_file(
         image.filename, {".png", ".jpg", ".jpeg", ".webp"}
     ):
-        return jsonify({"ok": False, "message": "Formato de imagen no soportado."}), 400
+        return jsonify({"ok": False, "message": "Formato de imagen no admitido."}), 400
 
     if audio and audio.filename and not _allowed_file(
         audio.filename, {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
     ):
-        return jsonify({"ok": False, "message": "Formato de audio no soportado."}), 400
+        return jsonify({"ok": False, "message": "Formato de audio no admitido."}), 400
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     upload_id = f"upload_{stamp}_{uuid4().hex[:6]}"
     upload_dir = UPLOADS_DIR / upload_id
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    video_ext = Path(video.filename).suffix.lower() or ".mp4"
-
-    video_path = upload_dir / f"input_video{video_ext}"
+    video_path: Path | None = None
     image_path: Path | None = None
     audio_path: Path | None = None
 
-    video.save(video_path)
+    if video and video.filename:
+        video_ext = Path(video.filename).suffix.lower() or ".mp4"
+        video_path = upload_dir / f"input_video{video_ext}"
+        video.save(video_path)
 
     if image and image.filename:
         image_ext = Path(image.filename).suffix.lower() or ".png"
@@ -149,31 +173,42 @@ def api_generate() -> object:
         audio_path = upload_dir / f"input_audio{audio_ext}"
         audio.save(audio_path)
 
-    result = process_video(
-        video_path=str(video_path),
+    result = process_multimodal_video(
+        video_path=str(video_path) if video_path else None,
         image_path=str(image_path) if image_path else None,
         prompt=prompt,
         output_root=str(OUTPUT_DIR),
         audio_path=str(audio_path) if audio_path else None,
+        overlay_text=overlay_text,
+        text_position=text_position,
+        text_size=text_size,
+        text_color=text_color,
+        image_duration_seconds=image_duration_seconds,
     )
 
-    if result.output_video.is_relative_to(OUTPUT_DIR):
-        rel_path = result.output_video.relative_to(OUTPUT_DIR).as_posix()
-    else:
-        rel_path = result.output_video.name
+    output_url = ""
+    if result.output_video.is_file():
+        if result.output_video.is_relative_to(OUTPUT_DIR):
+            rel_path = result.output_video.relative_to(OUTPUT_DIR).as_posix()
+        else:
+            rel_path = result.output_video.name
 
-    output_url = f"/media/{rel_path}"
+        output_url = f"/media/{rel_path}"
 
-    return jsonify(
-        {
-            "ok": result.ok,
-            "message": result.message,
-            "effects_applied": result.effects_applied,
-            "backend": result.backend,
-            "output_video_url": output_url,
-            "output_video_path": str(result.output_video),
-            "job_dir": str(result.job_dir),
-        }
+    status_code = 200 if result.ok else 400
+    return (
+        jsonify(
+            {
+                "ok": result.ok,
+                "message": result.message,
+                "effects_applied": result.effects_applied,
+                "backend": result.backend,
+                "output_video_url": output_url,
+                "output_video_path": str(result.output_video) if result.output_video.is_file() else "",
+                "job_dir": str(result.job_dir),
+            }
+        ),
+        status_code,
     )
 
 
@@ -188,7 +223,7 @@ def api_chat() -> object:
     chat_history = payload.get("chat_history", [])
 
     if not user_message:
-        return jsonify({"ok": False, "message": "Mensaje vacio."}), 400
+        return jsonify({"ok": False, "message": "Mensaje vacío."}), 400
 
     if not isinstance(markers, list):
         markers = []
@@ -209,6 +244,69 @@ def api_chat() -> object:
     return jsonify({"ok": True, "reply": reply})
 
 
+@app.post("/api/generate-sidance")
+def api_generate_sidance() -> object:
+    _load_dotenv()
+    _ensure_folders()
+
+    payload = request.get_json(silent=True) or {}
+
+    prompt = str(payload.get("prompt", "")).strip()
+    size_label = str(payload.get("size_label", "")).strip() or None
+
+    steps_raw = payload.get("num_inference_steps")
+    guidance_raw = payload.get("guidance_scale")
+    seed_raw = payload.get("seed")
+
+    try:
+        num_inference_steps = int(steps_raw) if steps_raw is not None else None
+    except (TypeError, ValueError):
+        num_inference_steps = None
+
+    try:
+        guidance_scale = float(guidance_raw) if guidance_raw is not None else None
+    except (TypeError, ValueError):
+        guidance_scale = None
+
+    try:
+        seed = int(seed_raw) if seed_raw is not None else None
+    except (TypeError, ValueError):
+        seed = None
+
+    result = generate_sidance_video(
+        prompt=prompt,
+        output_root=OUTPUT_DIR,
+        size_label=size_label,
+        num_inference_steps=num_inference_steps,
+        guidance_scale=guidance_scale,
+        seed=seed,
+    )
+
+    output_url = ""
+    if result.output_video.is_file():
+        if result.output_video.is_relative_to(OUTPUT_DIR):
+            rel_path = result.output_video.relative_to(OUTPUT_DIR).as_posix()
+        else:
+            rel_path = result.output_video.name
+        output_url = f"/media/{rel_path}"
+
+    status_code = 200 if result.ok else 400
+    return (
+        jsonify(
+            {
+                "ok": result.ok,
+                "message": result.message,
+                "backend": result.backend,
+                "model_id": result.model_id,
+                "output_video_url": output_url,
+                "output_video_path": str(result.output_video) if result.output_video.is_file() else "",
+                "job_dir": str(result.job_dir),
+            }
+        ),
+        status_code,
+    )
+
+
 def run_server() -> None:
     _load_dotenv()
     _ensure_folders()
@@ -218,8 +316,8 @@ def run_server() -> None:
     def _open_browser() -> None:
         webbrowser.open(url)
 
-    print(f"VIDEO IA local en {url}")
-    print("Cierra esta ventana para detener la app.")
+    print(f"SEEDANCE RUBEN COTON local en {url}")
+    print("Cierra esta ventana para detener la aplicación.")
     threading.Timer(1.0, _open_browser).start()
     app.run(host="127.0.0.1", port=port, debug=False)
 

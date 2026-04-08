@@ -19,6 +19,8 @@ from typing import Any, List
 TARGET_WIDTH = 1080
 TARGET_HEIGHT = 1920
 TARGET_RATIO_LABEL = "9:16 (1080x1920)"
+DEFAULT_IMAGE_SECONDS = 8.0
+MAX_OVERLAY_TEXT_CHARS = 220
 
 RUNWAY_API_BASE = "https://api.dev.runwayml.com/v1"
 RUNWAY_API_VERSION = "2024-11-06"
@@ -52,7 +54,7 @@ def _detect_effects(prompt: str) -> tuple[List[str], List[str]]:
             "colorchannelmixer=.393:.769:.189:.349:.686:.168:.272:.534:.131",
             "Sepia/Vintage",
         ),
-        (["mas brillo", "brillo"], "eq=brightness=0.06", "Mas brillo"),
+        (["mas brillo", "brillo"], "eq=brightness=0.06", "Más brillo"),
         (
             ["alto contraste", "contraste"],
             "eq=contrast=1.20:saturation=1.05",
@@ -61,7 +63,7 @@ def _detect_effects(prompt: str) -> tuple[List[str], List[str]]:
         (
             ["cinematic", "cinematografico", "cinematografica"],
             "eq=contrast=1.12:saturation=1.20",
-            "Cinematic",
+            "Cinematográfico",
         ),
     ]
 
@@ -194,10 +196,112 @@ def _remux_audio(
     return proc.returncode == 0
 
 
+def _sanitize_text_position(value: str | None) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"arriba", "top"}:
+        return "arriba"
+    if normalized in {"centro", "middle", "center"}:
+        return "centro"
+    return "abajo"
+
+
+def _sanitize_text_color(value: str | None) -> str:
+    normalized = str(value or "").strip().lower()
+    allowed = {
+        "blanco": "white",
+        "negro": "black",
+        "amarillo": "yellow",
+        "cian": "cyan",
+        "rojo": "red",
+    }
+    return allowed.get(normalized, "white")
+
+
+def _escape_drawtext_text(value: str) -> str:
+    escaped = value.replace("\\", "\\\\")
+    escaped = escaped.replace(":", "\\:")
+    escaped = escaped.replace("'", "\\'")
+    escaped = escaped.replace("%", "\\%")
+    escaped = escaped.replace("\n", "\\n")
+    return escaped
+
+
+def _build_drawtext_filter(
+    text_overlay: str,
+    text_position: str | None,
+    text_size: int | None,
+    text_color: str | None,
+) -> str | None:
+    clean_text = str(text_overlay or "").strip()
+    if not clean_text:
+        return None
+
+    clean_text = clean_text[:MAX_OVERLAY_TEXT_CHARS]
+    position = _sanitize_text_position(text_position)
+    size_value = text_size if isinstance(text_size, int) else 46
+    size_value = max(18, min(110, size_value))
+    color_value = _sanitize_text_color(text_color)
+    escaped = _escape_drawtext_text(clean_text)
+
+    y_expr = "h-th-70"
+    if position == "arriba":
+        y_expr = "70"
+    elif position == "centro":
+        y_expr = "(h-text_h)/2"
+
+    return (
+        "drawtext="
+        f"text='{escaped}':"
+        f"fontcolor={color_value}:"
+        f"fontsize={size_value}:"
+        "line_spacing=8:"
+        "box=1:"
+        "boxcolor=black@0.40:"
+        "boxborderw=18:"
+        "borderw=2:"
+        "bordercolor=black@0.80:"
+        "x=(w-text_w)/2:"
+        f"y={y_expr}"
+    )
+
+
+def _create_video_from_image(
+    image_path: Path,
+    output_path: Path,
+    ffmpeg_path: str,
+    duration_seconds: float,
+) -> None:
+    safe_duration = max(1.0, min(600.0, float(duration_seconds)))
+    command = [
+        ffmpeg_path,
+        "-y",
+        "-loop",
+        "1",
+        "-i",
+        str(image_path),
+        "-t",
+        f"{safe_duration:.2f}",
+        "-r",
+        "24",
+        "-vf",
+        "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
+        str(output_path),
+    ]
+    proc = _run_command(command)
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr or proc.stdout or "No se pudo crear vídeo base desde imagen.")
+
+
 def _build_summary(
     backend: str,
     prompt: str,
-    input_video: Path,
+    input_video: Path | None,
     input_image: Path | None,
     input_audio: Path | None,
     output_video: Path,
@@ -208,7 +312,7 @@ def _build_summary(
         "backend": backend,
         "prompt": prompt,
         "effects_applied": effects_applied,
-        "input_video": str(input_video),
+        "input_video": str(input_video) if input_video else None,
         "input_image": str(input_image) if input_image else None,
         "input_audio": str(input_audio) if input_audio else None,
         "output_video": str(output_video),
@@ -250,7 +354,7 @@ def _json_request(
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Error de red: {exc}") from exc
     except json.JSONDecodeError as exc:
-        raise RuntimeError("Respuesta JSON invalida del proveedor.") from exc
+        raise RuntimeError("Respuesta JSON inválida del proveedor.") from exc
 
 
 def _multipart_upload(upload_url: str, fields: dict[str, Any], file_path: Path) -> None:
@@ -316,7 +420,7 @@ def _runway_upload_file(api_key: str, file_path: Path) -> str:
     fields = response.get("fields", {})
 
     if not upload_url or not runway_uri or not isinstance(fields, dict):
-        raise RuntimeError("Respuesta invalida al crear upload en Runway.")
+        raise RuntimeError("Respuesta inválida al crear subida en Runway.")
 
     _multipart_upload(upload_url, fields, file_path)
     return runway_uri
@@ -361,9 +465,9 @@ def _download_file(url: str, destination: Path) -> None:
             destination.write_bytes(data)
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Error descargando video generado: HTTP {exc.code} {body}") from exc
+        raise RuntimeError(f"Error descargando vídeo generado: HTTP {exc.code} {body}") from exc
     except urllib.error.URLError as exc:
-        raise RuntimeError(f"Error de red descargando video generado: {exc}") from exc
+        raise RuntimeError(f"Error de red descargando vídeo generado: {exc}") from exc
 
 
 def _runway_wait_for_task(api_key: str, task_id: str) -> dict[str, Any]:
@@ -384,10 +488,10 @@ def _runway_wait_for_task(api_key: str, task_id: str) -> dict[str, Any]:
             return task
         if status in {"FAILED", "ERROR", "CANCELED", "CANCELLED"}:
             failure = task.get("failure") or task.get("failureCode") or "Sin detalle"
-            raise RuntimeError(f"Runway devolvio estado {status}: {failure}")
+            raise RuntimeError(f"Runway devolvió estado {status}: {failure}")
 
         if time.time() - started > timeout_seconds:
-            raise RuntimeError("Timeout esperando el resultado de Runway.")
+            raise RuntimeError("Tiempo de espera agotado al recibir el resultado de Runway.")
 
         time.sleep(poll_seconds)
 
@@ -494,7 +598,7 @@ def _process_with_local_backend(
             job_dir=job_dir,
             message=(
                 "Error aplicando cambios locales. "
-                "Se guardo copia del video base preparado."
+                "Se guardó copia del vídeo base preparado."
             ),
             effects_applied=[],
             backend="local",
@@ -523,12 +627,12 @@ def _process_with_local_backend(
 
     if labels:
         status_msg = (
-            "Video generado en formato Reels 9:16 (1080x1920) con backend local. "
+            "Vídeo generado en formato Reels 9:16 (1080x1920) con backend local. "
             "Efectos: " + ", ".join(labels)
         )
     else:
         status_msg = (
-            "Video generado en formato Reels 9:16 (1080x1920) con backend local."
+            "Vídeo generado en formato Reels 9:16 (1080x1920) con backend local."
         )
 
     return ProcessResult(
@@ -584,12 +688,12 @@ def _process_with_runway_backend(
         )
         task_id = str(created_task.get("id", "")).strip()
         if not task_id:
-            raise RuntimeError("Runway no devolvio id de tarea.")
+            raise RuntimeError("Runway no devolvió identificador de tarea.")
 
         final_task = _runway_wait_for_task(api_key, task_id)
         generated_url = _pick_best_video_url(final_task)
         if not generated_url:
-            raise RuntimeError("No se encontro URL de video en la respuesta de Runway.")
+            raise RuntimeError("No se encontró URL de vídeo en la respuesta de Runway.")
 
         raw_runway_video = job_dir / "video_runway_raw.mp4"
         _download_file(generated_url, raw_runway_video)
@@ -606,7 +710,7 @@ def _process_with_runway_backend(
         cost_hint = ""
         if duration:
             # Runway gen4_aleph: 15 credits/s -> $0.15/s
-            cost_hint = f" Coste estimado aprox: ${duration * 0.15:.2f}."
+            cost_hint = f" Coste estimado aprox.: ${duration * 0.15:.2f}."
 
         summary = _build_summary(
             backend="runway",
@@ -628,7 +732,7 @@ def _process_with_runway_backend(
             output_video=final_output,
             job_dir=job_dir,
             message=(
-                "Video generado con Runway (gen4_aleph) en formato Reels 9:16 "
+                "Vídeo generado con Runway (gen4_aleph) en formato Reels 9:16 "
                 "(1080x1920)." + cost_hint
             ),
             effects_applied=[],
@@ -639,7 +743,7 @@ def _process_with_runway_backend(
         if "At least one credit purchase is required" in err_text:
             err_text = (
                 "Runway conectado pero bloqueado: hace falta comprar "
-                "al menos un paquete de creditos en Runway API."
+                "al menos un paquete de créditos en Runway API."
             )
         return ProcessResult(
             ok=False,
@@ -668,7 +772,7 @@ def process_video(
             ok=False,
             output_video=Path(),
             job_dir=Path(),
-            message="No existe el video indicado.",
+            message="No existe el vídeo indicado.",
             effects_applied=[],
             backend="local",
         )
@@ -719,10 +823,10 @@ def process_video(
         shutil.copy2(src_video, fallback_video)
         (job_dir / "resultado.txt").write_text(
             (
-                "No se encontro ffmpeg.\n"
-                "Se ha dejado una copia del video original.\n"
+                "No se encontró ffmpeg.\n"
+                "Se ha dejado una copia del vídeo original.\n"
                 "No se puede garantizar formato fijo 1080x1920 sin ffmpeg.\n"
-                "Instala ffmpeg o imageio-ffmpeg para activar edicion automatica.\n"
+                "Instala ffmpeg o imageio-ffmpeg para activar edición automática.\n"
             ),
             encoding="utf-8",
         )
@@ -731,7 +835,7 @@ def process_video(
             output_video=fallback_video,
             job_dir=job_dir,
             message=(
-                "No se encontro ffmpeg. "
+                "No se encontró ffmpeg. "
                 "No se pudo forzar formato Reels 9:16 (1080x1920)."
             ),
             effects_applied=[],
@@ -749,7 +853,7 @@ def process_video(
             ok=False,
             output_video=fallback_video,
             job_dir=job_dir,
-            message=f"No se pudo preparar el video en formato Reels: {exc}",
+            message=f"No se pudo preparar el vídeo en formato Reels: {exc}",
             effects_applied=[],
             backend="local",
         )
@@ -784,7 +888,7 @@ def process_video(
         if local_result.ok:
             local_result.message = (
                 runway_result.message
-                + " Se uso backend local como respaldo. "
+                + " Se usó backend local como respaldo. "
                 + local_result.message
             )
         return local_result
