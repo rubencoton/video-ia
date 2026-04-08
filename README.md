@@ -137,3 +137,9 @@ main
 - Ultimo cierre tecnico: 2026-04-08 (Europe/Madrid).
 - Siguiente uso recomendado: clonar desde GitHub y continuar en la rama actual.
 
+
+## CIERRE MIGRACION CLOUD
+
+- Fecha: 2026-04-08
+- Estado: preparado para retomar desde nuevo sistema
+
